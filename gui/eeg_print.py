@@ -22,10 +22,15 @@ class PrintRhythmListener(RhythmAnalyzerListener):
 def main():
     blink_listener = PrintBlinkListener()
     jaw_clench_listener = PrintJawClenchListener()
-    rhythm_listener = RhythmAnalyzerListener()
+    rhythm_listener = PrintRhythmListener()
     eeg = EEGProcessor(blink_listener=blink_listener, clench_listener=jaw_clench_listener,
                        rhythm_listener=rhythm_listener)
-    eeg.start()
+    eeg.initialize_stream()
+    try:
+        while eeg.step():
+            pass
+    except KeyboardInterrupt:
+        print("Остановка пользователем.")
 
 
 if __name__ == '__main__':

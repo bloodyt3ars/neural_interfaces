@@ -3,13 +3,10 @@ import sys
 import pyqtgraph as pg
 from PyQt6 import QtWidgets, QtCore
 
-from blink.blink_detector import BlinkDetectorListener
-from jaws.jaw_clench_detector import JawClenchDetectorListener
 from processor.eeg_processor import EEGProcessor
-from rhytm.rhytm_analyzer import RhythmAnalyzerListener
 
 
-class EEGGui(QtWidgets.QWidget, BlinkDetectorListener, JawClenchDetectorListener, RhythmAnalyzerListener):
+class EEGGui(QtWidgets.QWidget):
     """
     Графический интерфейс для отображения EEG активности, событий моргания и сжатия челюсти, а также альфа/бета ритмов.
     """
@@ -19,15 +16,14 @@ class EEGGui(QtWidgets.QWidget, BlinkDetectorListener, JawClenchDetectorListener
 
     def __init__(self):
         super().__init__()
-
         self.blink_count = 0
         self.clench_count = 0
-
         self.setWindowTitle("EEG Monitor")
         self.setGeometry(200, 200, 800, 600)
 
         self.init_ui()
         self.eeg_processor = None
+        self.worker = None
         self.thread = None
 
         self.blink_signal.connect(self.update_blink_ui)
@@ -133,19 +129,20 @@ class EEGGui(QtWidgets.QWidget, BlinkDetectorListener, JawClenchDetectorListener
         self.thread = QtCore.QThread()
         self.worker = EEGWorker(self.eeg_processor)
         self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
+
+        self.thread.started.connect(self.worker.start)
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
         self.thread.start()
 
         self.btn_start.setEnabled(False)
         self.btn_stop.setEnabled(True)
 
     def stop_eeg(self):
-        if self.thread:
+        if self.worker:
             self.worker.stop()
-            self.thread.quit()
-            self.thread.wait()
-            self.thread = None
-
         self.btn_start.setEnabled(True)
         self.btn_stop.setEnabled(False)
 
@@ -154,17 +151,36 @@ class EEGWorker(QtCore.QObject):
     """
     Запускает EEGProcessor в отдельном потоке. Работает до сигнала stop().
     """
+    finished = QtCore.pyqtSignal()
 
     def __init__(self, processor: EEGProcessor):
         super().__init__()
         self.processor = processor
-        self.running = True
+        self.timer = QtCore.QTimer(self)
+        self.timer.setInterval(100)
+        self.timer.timeout.connect(self.process_step)
+        self.running = False
 
-    def run(self):
-        self.processor.start()
+    def start(self):
+        if self.processor.initialize_stream():
+            self.running = True
+            self.timer.start()
+        else:
+            self.finished.emit()
+
+    def process_step(self):
+        if not self.running:
+            self.timer.stop()
+            self.finished.emit()
+            return
+
+        if not self.processor.step():
+            self.stop()
 
     def stop(self):
         self.running = False
+        self.timer.stop()
+        self.finished.emit()
 
 
 if __name__ == "__main__":

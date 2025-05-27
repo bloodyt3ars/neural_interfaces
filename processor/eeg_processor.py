@@ -28,37 +28,36 @@ class EEGProcessor:
         self.__jaw_listener = clench_listener
         self.__rhythm_listener = rhythm_listener
 
-    def start(self):
-        """
-        Запускает основной цикл обработки EEG-сигнала: подключение к LSL-потоку,
-        детекция событий и анализ ритмов.
-        """
+        self.__start_time = None
+
+    def initialize_stream(self):
         print("Поиск потока LSL...")
         streams = resolve_streams(wait_time=5)
 
         if not streams:
             print("Потоков не найдено.")
-            return
+            return False
 
         self.__stream = StreamInlet(streams[0])
+        self.__start_time = time.time()
         print("Обработка EEG...")
+        return True
 
-        start_time = time.time()
-        try:
-            while True:
-                samples, timestamps = self.__stream.pull_chunk()
-                if not samples:
-                    continue
+    def step(self) -> bool:
+        """
+        Выполняет один шаг обработки: считывание и обработка блока сигналов.
 
-                self.__blink_detector.detect(samples, timestamps, self.__blink_listener)
-                self.__jaw_detector.detect(samples, timestamps, self.__jaw_listener)
-                self.__rhythm_analyzer.analyze(samples, self.__rhythm_listener)
+        :return: True, если можно продолжать; False — если нужно завершить
+        """
+        if self.__duration and (time.time() - self.__start_time >= self.__duration):
+            print("Обработка завершена.")
+            return False
 
-                if self.__duration and (time.time() - start_time >= self.__duration):
-                    print("Обработка завершена.")
-                    break
+        samples, timestamps = self.__stream.pull_chunk()
+        if not samples:
+            return True
 
-                time.sleep(0.1)
-
-        except KeyboardInterrupt:
-            print("Остановка пользователем.")
+        self.__blink_detector.detect(samples, timestamps, self.__blink_listener)
+        self.__jaw_detector.detect(samples, timestamps, self.__jaw_listener)
+        self.__rhythm_analyzer.analyze(samples, self.__rhythm_listener)
+        return True
