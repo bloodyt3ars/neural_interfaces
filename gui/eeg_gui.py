@@ -71,8 +71,8 @@ class EEGGui(QtWidgets.QWidget):
 
         layout.addLayout(center_layout)
 
-        self.btn_start = QtWidgets.QPushButton("Старт")
-        self.btn_stop = QtWidgets.QPushButton("Стоп")
+        self.btn_start = QtWidgets.QPushButton("Start")
+        self.btn_stop = QtWidgets.QPushButton("Stop")
         self.btn_stop.setEnabled(False)
 
         self.btn_start.clicked.connect(self.start_eeg)
