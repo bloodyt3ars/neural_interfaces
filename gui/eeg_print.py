@@ -25,7 +25,10 @@ def main():
     rhythm_listener = PrintRhythmListener()
     eeg = EEGProcessor(blink_listener=blink_listener, clench_listener=jaw_clench_listener,
                        rhythm_listener=rhythm_listener)
-    eeg.initialize_stream()
+
+    if not eeg.initialize_stream():
+        raise Exception("Failed to initialize stream")
+
     try:
         while eeg.step():
             pass
