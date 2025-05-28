@@ -91,13 +91,13 @@ class EEGGui(QtWidgets.QWidget):
         self.blink_count += 1
         self.blink_label.setText(f"🔴 Blink Count: {self.blink_count}")
         self.set_led(self.blink_indicator, "red")
-        QtCore.QTimer.singleShot(300, lambda: self.set_led(self.blink_indicator, "gray"))
+        QtCore.QTimer.singleShot(500, lambda: self.set_led(self.blink_indicator, "gray"))
 
     def update_clench_ui(self):
         self.clench_count += 1
         self.clench_label.setText(f"🔵 Clench Count: {self.clench_count}")
         self.set_led(self.clench_indicator, "blue")
-        QtCore.QTimer.singleShot(300, lambda: self.set_led(self.clench_indicator, "gray"))
+        QtCore.QTimer.singleShot(500, lambda: self.set_led(self.clench_indicator, "gray"))
 
     def update_graphs(self, alpha: float, beta: float, ratio: float):
         self.alpha_data.append(alpha)
