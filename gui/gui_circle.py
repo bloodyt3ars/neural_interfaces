@@ -1,9 +1,8 @@
 import sys
+
 from PyQt6 import QtWidgets, QtCore, QtGui
+
 from processor.eeg_processor import EEGProcessor
-from blink.blink_detector import BlinkDetectorListener
-from jaws.jaw_clench_detector import JawClenchDetectorListener
-from rhytm.rhytm_analyzer import RhythmAnalyzerListener
 
 
 class EEGGui(QtWidgets.QWidget):
@@ -25,7 +24,6 @@ class EEGGui(QtWidgets.QWidget):
         self.eeg_processor = None
         self.thread = None
         self.worker = None
-
 
         self.blink_signal.connect(self.update_blink)
         self.clench_signal.connect(self.update_clench)
@@ -66,21 +64,21 @@ class EEGGui(QtWidgets.QWidget):
 
     def update_blink(self):
         self.blink_count += 1
+        self.blink_label.setText(f"🔴 Blink Count: {self.blink_count}")
         self.circle.flash("red")
 
     def update_clench(self):
         self.clench_count += 1
+        self.clench_label.setText(f"🔵 Clench Count: {self.clench_count}")
         self.circle.flash("blue")
 
     def update_circle(self, ratio: float):
         self.circle.set_ratio(ratio)
 
     def on_blink(self, timestamp: float) -> None:
-        print("👁 Blink detected")
         self.blink_signal.emit()
 
     def on_clench(self, timestamp: float) -> None:
-        print("😬 Clench detected")
         self.clench_signal.emit()
 
     def on_rhythm(self, alpha_power: float, beta_power: float, alpha_beta_ratio: float) -> None:
